@@ -1,8 +1,4 @@
-Dưới đây là nội dung file `README.md` tóm tắt tổng quan cấu trúc đồ án của bạn. File này được thiết kế để trình bày một cách chuyên nghiệp, giúp giảng viên và các thành viên trong nhóm dễ dàng theo dõi.
-
----
-
-# Đồ án: Hệ thống Gán nhãn nghĩa và Suy luận Pháp lý tiếng Việt
+Hệ thống Gán nhãn nghĩa và Suy luận Pháp lý tiếng Việt
 
 ## 1. Giới thiệu tổng quan
 
@@ -62,9 +58,3 @@ LEGAL_WSD_PROJECT/
 2. **Cài đặt Prolog:** Cài đặt [SWI-Prolog](https://www.swi-prolog.org/) vào máy tính.
 3. **Chạy ứng dụng:** * Chạy Backend: `python backend/main.py`
 * Mở file `frontend/index.html` trên trình duyệt.
-
-
-
----
-
-**Bạn có muốn tôi viết chi tiết nội dung code cho file `prolog_bridge.py` để bạn chạy thử việc kết nối giữa Python và Prolog không?**
