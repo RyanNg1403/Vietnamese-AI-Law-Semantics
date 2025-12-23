@@ -1,8 +1,8 @@
 # train_bert.py
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from torch.optim import AdamW
-from transformers import BertTokenizerFast, BertForTokenClassification
+from transformers import BertTokenizerFast, BertForTokenClassification, get_linear_schedule_with_warmup
 from nltk.corpus import semcor
 import nltk
 import json
@@ -69,6 +69,68 @@ class WSDDataset(Dataset):
             else: # Các sub-word tiếp theo
                 doc_labels.append(-100)
                 
+        return {
+            'input_ids': encoding['input_ids'].flatten(),
+            'attention_mask': encoding['attention_mask'].flatten(),
+            'labels': torch.tensor(doc_labels, dtype=torch.long)
+        }
+
+# --- 1B. CSV DATASET CLASS (for fine-tuning data) ---
+class CSVDataset(Dataset):
+    def __init__(self, csv_path, label2id, tokenizer, max_len):
+        """
+        Dataset for CSV files with columns: Sentence_ID, Token, POS, Selected_Synset
+        """
+        self.df = pd.read_csv(csv_path)
+        self.label2id = label2id
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+        
+        # Group by sentence
+        self.sentences = []
+        for sent_id, group in self.df.groupby('Sentence_ID'):
+            tokens = group['Token'].tolist()
+            synsets = group['Selected_Synset'].fillna('').tolist()  # Fill NaN with empty string
+            self.sentences.append((tokens, synsets))
+    
+    def __len__(self):
+        return len(self.sentences)
+    
+    def __getitem__(self, idx):
+        tokens, synsets = self.sentences[idx]
+        labels = []
+        
+        # Map synsets to label IDs
+        for synset in synsets:
+            if synset and synset != '':  # If synset exists
+                label_id = self.label2id.get(synset, -100)
+            else:  # Function word or no synset
+                label_id = -100
+            labels.append(label_id)
+        
+        # Tokenize and align labels (same as WSDDataset)
+        encoding = self.tokenizer(
+            tokens,
+            is_split_into_words=True,
+            return_offsets_mapping=True,
+            padding='max_length',
+            truncation=True,
+            max_length=self.max_len,
+            return_tensors="pt"
+        )
+        
+        # Align labels: Only label first sub-word of each word
+        doc_labels = []
+        word_ids = encoding.word_ids()
+        
+        for i, word_idx in enumerate(word_ids):
+            if word_idx is None:  # Special tokens [CLS], [SEP]
+                doc_labels.append(-100)
+            elif i == 0 or word_idx != word_ids[i-1]:  # First sub-word of word
+                doc_labels.append(labels[word_idx])
+            else:  # Subsequent sub-words
+                doc_labels.append(-100)
+        
         return {
             'input_ids': encoding['input_ids'].flatten(),
             'attention_mask': encoding['attention_mask'].flatten(),
@@ -175,22 +237,57 @@ def train(resume=False):
     
     model.to(Config.DEVICE)
     
-    # Tạo DataLoader
-    train_dataset = WSDDataset(semcor_data, label2id, tokenizer, Config.MAX_LEN)
+    # Tạo DataLoader - Combine SemCor + Fine-tuning data
+    print("📚 Loading training datasets...")
+    semcor_dataset = WSDDataset(semcor_data, label2id, tokenizer, Config.MAX_LEN)
+    print(f"  - SemCor: {len(semcor_dataset)} sentences")
+    
+    # Load fine-tuning CSV data if it exists
+    import os
+    if os.path.exists(Config.FINETUNE_TRAIN_FILE):
+        csv_dataset = CSVDataset(Config.FINETUNE_TRAIN_FILE, label2id, tokenizer, Config.MAX_LEN)
+        print(f"  - Fine-tuning CSV: {len(csv_dataset)} sentences")
+        
+        # CRITICAL FIX: Oversample small fine-tuning dataset to prevent dilution
+        # Without this, legal data is overwhelmed by SemCor (743:1 ratio)
+        csv_dataset_oversampled = ConcatDataset([csv_dataset] * Config.OVERSAMPLE_FACTOR)
+        print(f"  - Oversampled CSV ({Config.OVERSAMPLE_FACTOR}x): {len(csv_dataset_oversampled)} examples")
+        
+        # Combine both datasets
+        train_dataset = ConcatDataset([semcor_dataset, csv_dataset_oversampled])
+        print(f"  - Combined total: {len(train_dataset)} sentences\n")
+    else:
+        print(f"  - Fine-tuning CSV not found, using only SemCor\n")
+        train_dataset = semcor_dataset
+    
     train_loader = DataLoader(train_dataset, batch_size=Config.BATCH_SIZE, shuffle=True)
     
-    optimizer = AdamW(model.parameters(), lr=Config.LEARNING_RATE)
+    # Optimizer with weight decay
+    optimizer = AdamW(model.parameters(), lr=Config.LEARNING_RATE, weight_decay=Config.WEIGHT_DECAY)
+    
+    # Learning rate scheduler with warmup
+    num_training_steps = len(train_loader) * Config.EPOCHS
+    num_warmup_steps = int(num_training_steps * Config.WARMUP_RATIO)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer,
+        num_warmup_steps=num_warmup_steps,
+        num_training_steps=num_training_steps
+    )
+    
+    print(f"Training steps: {num_training_steps}, Warmup steps: {num_warmup_steps}")
     
     # Training Loop
     print("Start Training...")
     model.train()
+    
+    global_batch_num = 0  # Track total batches across all epochs
     
     epoch_bar = tqdm(range(Config.EPOCHS), desc="Training Progress", position=0)
     for epoch in epoch_bar:
         total_loss = 0
         loop = tqdm(train_loader, desc=f"Epoch {epoch+1}/{Config.EPOCHS}", leave=False, position=1)
         
-        for batch in loop:
+        for batch_idx, batch in enumerate(loop):
             input_ids = batch['input_ids'].to(Config.DEVICE)
             attention_mask = batch['attention_mask'].to(Config.DEVICE)
             labels = batch['labels'].to(Config.DEVICE)
@@ -200,10 +297,24 @@ def train(resume=False):
             loss = outputs.loss
             
             loss.backward()
+            
+            # Gradient clipping to prevent exploding gradients
+            torch.nn.utils.clip_grad_norm_(model.parameters(), Config.MAX_GRAD_NORM)
+            
             optimizer.step()
+            scheduler.step()  # Update learning rate
             
             total_loss += loss.item()
+            global_batch_num += 1
+            
             loop.set_postfix(batch_loss=f"{loss.item():.4f}")
+            
+            # Evaluate every N batches
+            if global_batch_num % Config.EVAL_EVERY_N_BATCHES == 0:
+                tqdm.write(f"\n[Batch {global_batch_num}] Evaluating...")
+                accuracy, f1_macro, f1_weighted = evaluate_on_test_set(model, tokenizer, label2id)
+                if accuracy is not None:
+                    tqdm.write(f"  Acc: {accuracy:.4f} | F1-Macro: {f1_macro:.4f} | F1-Weighted: {f1_weighted:.4f}\n")
             
         avg_loss = total_loss / len(train_loader)
         epoch_bar.set_postfix(avg_loss=f"{avg_loss:.4f}")

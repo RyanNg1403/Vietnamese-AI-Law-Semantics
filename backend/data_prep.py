@@ -4,6 +4,7 @@ from nltk.corpus import semcor
 from nltk.corpus import wordnet as wn
 import json
 import os
+import pandas as pd
 
 # Tải dữ liệu cần thiết
 print("Downloading NLTK data...")
@@ -27,19 +28,30 @@ def create_label_map():
                     synset = lemma_obj.synset()
                     unique_synsets.add(synset.name())
     
+    print(f"SemCor synsets: {len(unique_synsets)}")
+    
+    # CRITICAL FIX: Also read synsets from fine-tuning CSV files
+    csv_path = '/Users/PhatNguyen/Desktop/vietnamese-legal-text/data/legal_finetuning_train_cleaned.csv'
+    if os.path.exists(csv_path):
+        print(f"Reading fine-tuning CSV: {csv_path}")
+        df = pd.read_csv(csv_path)
+        csv_synsets = set(df['Selected_Synset'].dropna().unique())
+        unique_synsets.update(csv_synsets)
+        print(f"Added {len(csv_synsets)} synsets from CSV")
+    
     # Tạo mapping: Synset Name -> ID
     # Thêm nhãn 'O' (Outside) cho các từ không được gán nhãn
     labels = sorted(list(unique_synsets))
     label2id = {label: i for i, label in enumerate(labels)}
     label2id['O'] = -100 # Quy ước bỏ qua loss cho từ không gán nhãn
     
-    print(f"Total unique synsets found: {len(labels)}")
+    print(f"Total unique synsets in label map: {len(labels)}")
     
     # Lưu ra file JSON để dùng lại khi train và test
     with open('/Users/PhatNguyen/Desktop/vietnamese-legal-text/data/label_map.json', 'w') as f:
         json.dump(label2id, f)
     
-    print("Label map saved to 'label_map.json'")
+    print("✅ Label map saved to 'label_map.json'")
 
 if __name__ == "__main__":
     create_label_map()
