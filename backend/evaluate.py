@@ -2,7 +2,7 @@
 import torch
 import pandas as pd
 import json
-from transformers import BertTokenizer, BertForTokenClassification
+from transformers import BertTokenizerFast, BertForTokenClassification
 from config import Config
 from sklearn.metrics import classification_report, accuracy_score
 
@@ -10,7 +10,7 @@ def evaluate_legal_text():
     # 1. Load Resources
     print("Loading model and data...")
     try:
-        tokenizer = BertTokenizer.from_pretrained(Config.MODEL_SAVE_PATH)
+        tokenizer = BertTokenizerFast.from_pretrained(Config.MODEL_SAVE_PATH)
         model = BertForTokenClassification.from_pretrained(Config.MODEL_SAVE_PATH)
     except:
         print("Error: Model not found. Please run train_bert.py first.")
@@ -43,20 +43,21 @@ def evaluate_legal_text():
         sentence_str = " ".join(words)
         
         # Tokenize
-        inputs = tokenizer(
+        encoding = tokenizer(
             sentence_str, 
             return_tensors="pt", 
             truncation=True, 
             max_length=Config.MAX_LEN
-        ).to(Config.DEVICE)
+        )
+        inputs = {k: v.to(Config.DEVICE) for k, v in encoding.items()}
         
         with torch.no_grad():
             outputs = model(**inputs)
             predictions = torch.argmax(outputs.logits, dim=2)
             
         # Mapping lại từ token BERT về word gốc
-        tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
-        word_ids = inputs.word_ids()
+        tokens = tokenizer.convert_ids_to_tokens(encoding["input_ids"][0])
+        word_ids = encoding.word_ids(0)
         
         # Lấy nhãn dự đoán cho các từ quan trọng (có trong CSV của bạn)
         # Lưu ý: Logic này tương đối phức tạp do việc tách từ khác nhau

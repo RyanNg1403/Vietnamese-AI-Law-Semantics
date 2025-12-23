@@ -36,7 +36,7 @@ def create_label_map():
     print(f"Total unique synsets found: {len(labels)}")
     
     # Lưu ra file JSON để dùng lại khi train và test
-    with open('label_map.json', 'w') as f:
+    with open('/Users/PhatNguyen/Desktop/vietnamese-legal-text/data/label_map.json', 'w') as f:
         json.dump(label2id, f)
     
     print("Label map saved to 'label_map.json'")
