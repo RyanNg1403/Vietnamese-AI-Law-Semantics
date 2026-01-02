@@ -1,0 +1,9 @@
+Query,Result
+"is_developer(X, chat_gpt_vn)",X = bkav_corp
+"is_provider(bkav_corp, _)",false
+"is_provider(fpt_software, X)",X = camera_traffic
+"is_a(developer, person)",true
+is_serious_incident(incident_01),true
+"is_deployer(bo_cong_an, camera_traffic)",true
+"is_user(nguyen_van_an, chat_gpt_vn)",true
+"is_a(user, person)",true

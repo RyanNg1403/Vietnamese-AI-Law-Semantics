@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Query Visualization - Legal Text Semantics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;600&family=Work+Sans:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="./query-style.css">
+</head>
+
+<body class="dark-mode">
+  <header>
+    <div class="top-bar">
+      <div class="mark">AI</div>
+      <div class="titles">
+        <h1>Legal Text Query Visualization</h1>
+        <div class="subtitle">Interactive pipeline with intermediate steps tracing</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Query Selection Section -->
+    <section class="query-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Query Selection</p>
+          <h2>Select a predefined query</h2>
+        </div>
+      </div>
+
+      <div class="query-controls">
+        <div class="control-group">
+          <label for="querySelect">Query:</label>
+          <select id="querySelect" class="query-select">
+            <option value="">-- Select a query --</option>
+          </select>
+          <div id="queryLoadStatus" style="margin-top: 8px; font-size: 14px; color: #888;">Loading queries...</div>
+        </div>
+
+        <div class="control-group">
+          <label>WSD Method:</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="wsdMethod" value="mfs" checked>
+              <span>MFS</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="wsdMethod" value="bert">
+              <span>BERT</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="button" id="runQueryBtn" class="primary-btn" disabled>Run Query</button>
+      </div>
+
+      <div id="queryInfo" class="query-info" style="display: none;">
+        <div class="info-item">
+          <strong>Query:</strong> <code id="queryText"></code>
+        </div>
+        <div class="info-item">
+          <strong>Natural Language:</strong> <span id="queryNL"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pipeline Visualization -->
+    <section class="pipeline-section" id="pipelineSection" style="display: none;">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Pipeline</p>
+          <h2>Processing Steps</h2>
+        </div>
+        <div id="pipelineStatus" class="status">Processing...</div>
+      </div>
+
+      <div class="pipeline-flow">
+        <div class="pipeline-step" id="stepWSD">
+          <div class="step-icon">1</div>
+          <div class="step-label">WSD</div>
+          <div class="step-status">⏳</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="stepFOL">
+          <div class="step-icon">2</div>
+          <div class="step-label">FOL</div>
+          <div class="step-status">⏳</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="stepProlog">
+          <div class="step-icon">3</div>
+          <div class="step-label">Prolog</div>
+          <div class="step-status">⏳</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step" id="stepResult">
+          <div class="step-icon">✓</div>
+          <div class="step-label">Result</div>
+          <div class="step-status">⏳</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Step Details (Accordion) -->
+    <section class="details-section" id="detailsSection" style="display: none;">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Step Details</p>
+          <h2>Intermediate Processing Steps</h2>
+        </div>
+      </div>
+
+      <!-- WSD Details -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion('wsdDetails')">
+          <span>1. Word Sense Disambiguation (WSD)</span>
+          <span class="accordion-icon">▼</span>
+        </button>
+        <div class="accordion-content" id="wsdDetails">
+          <div id="wsdContent">Loading...</div>
+        </div>
+      </div>
+
+      <!-- FOL Details -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion('folDetails')">
+          <span>2. First-Order Logic Translation</span>
+          <span class="accordion-icon">▼</span>
+        </button>
+        <div class="accordion-content" id="folDetails">
+          <div id="folContent">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Prolog Details -->
+      <div class="accordion-item">
+        <button class="accordion-header" onclick="toggleAccordion('prologDetails')">
+          <span>3. Prolog Inference</span>
+          <span class="accordion-icon">▼</span>
+        </button>
+        <div class="accordion-content" id="prologDetails">
+          <div id="prologContent">Loading...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Final Result -->
+    <section class="result-section" id="resultSection" style="display: none;">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Final Result</p>
+          <h2>Query Result Comparison</h2>
+        </div>
+      </div>
+
+      <div class="result-box" id="finalResult">
+        <!-- Populated by JavaScript -->
+      </div>
+    </section>
+  </main>
+
+  <script src="./query-script.js"></script>
+</body>
+
+</html>

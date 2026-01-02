@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=query.html">
+  <title>Redirecting to Query Visualization...</title>
+</head>
+<body>
+  <p>Redirecting to <a href="query.html">query.html</a>...</p>
+  <script>
+    window.location.href = 'query.html';
+  </script>
+</body>
+</html>
+  <header>
+    <div class="top-bar">
+      <div class="mark">AI</div>
+      <div class="titles">
+        <h1>AI-Law-Semantics</h1>
+        <div class="subtitle">BERT-based word sense disambiguation - CS229 project</div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Input</p>
+          <h2>Submit legal text</h2>
+        </div>
+        <div class="hint">Endpoint: <code id="endpointLabel"></code></div>
+      </div>
+      <form id="annotateForm">
+        <label for="textInput">Legal text</label>
+        <textarea id="textInput" placeholder="Paste a paragraph from your legal document. The backend should return token-level senses and quality metrics."></textarea>
+        <div class="actions">
+          <button type="submit" id="submitBtn">Run annotation</button>
+          <button type="button" class="secondary" id="sampleBtn">Use sample text</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Results</p>
+          <h2>Model output</h2>
+        </div>
+        <div id="status" class="status">Awaiting input.</div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="label">Accuracy</div>
+          <div class="value" id="accuracy">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">F1 (Macro)</div>
+          <div class="value" id="f1macro">--</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">F1 (Weighted)</div>
+          <div class="value" id="f1weighted">--</div>
+        </div>
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 18%;">Token</th>
+              <th style="width: 22%;">Predicted sense</th>
+              <th>Definition / gloss</th>
+              <th style="width: 14%;">Confidence</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <tr><td colspan="4">No annotations yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  <script src="./script.js"></script>
+</body>
+</html>
