@@ -140,10 +140,10 @@
 
 | Metric | MFS Baseline | BERT Model |
 |--------|--------------|------------|
-| **Accuracy** | **71.25%** (57/80) | 65.00% (52/80) |
-| **Precision (Macro)** | 0.55 | 0.42 |
-| **Recall (Macro)** | 0.55 | 0.41 |
-| **F1-Weighted** | 0.71 | 0.65 |
+| **Accuracy** | **70.00%** (56/80) | 67.50% (54/80) |
+| **Precision (Macro)** | 0.55 | 0.44 |
+| **Recall (Macro)** | 0.55 | 0.44 |
+| **F1-Weighted** | 0.71 | 0.68 |
 
 ---
 
@@ -172,8 +172,8 @@
 
 | Quan sát | Giải thích |
 |----------|------------|
-| MFS > BERT (71% vs 65%) | Legal text dùng nghĩa phổ biến, ít nhập nhằng |
-| F1-Macro thấp (0.42) | Class imbalance: 45 synsets nhưng phân bố không đều |
+| MFS > BERT (70% vs 67.5%) | Legal text dùng nghĩa phổ biến, ít nhập nhằng |
+| F1-Macro thấp (0.44) | Class imbalance: 45 synsets nhưng phân bố không đều |
 | Domain mismatch | SemCor (general English) ≠ Legal terminology |
 
 **Hướng cải thiện**:
@@ -406,7 +406,7 @@ Step 5: Trả về true
 - ✅ 100% queries trả về kết quả đúng
 
 **Hạn chế**:
-- ⚠️ Phụ thuộc chất lượng WSD (65-71% accuracy)
+- ⚠️ Phụ thuộc chất lượng WSD (67.5-70% accuracy)
 - ⚠️ Cần mock data để demo
 - ⚠️ Chưa xử lý phủ định, thời gian, anaphora
 
@@ -419,7 +419,7 @@ Step 5: Trả về true
 | Giai đoạn | Input | Phương pháp | Output |
 |-----------|-------|-------------|--------|
 | **1. Tiền xử lý** | `selected_paragraph.txt` (8 câu) | NLTK Tokenize + POS | `draft_data.csv` |
-| **2. Gán nhãn** | Draft + Manual annotation | MFS: 71.25%, BERT: 65% | `gold_standard.csv` (80 tokens) |
+| **2. Gán nhãn** | Draft + Manual annotation | MFS: 70%, BERT: 67.5% | `gold_standard.csv` (80 tokens) |
 | **3. Biểu diễn** | Gold standard | FOL + WordNet | `knowledge_base.pl` (125 facts) |
 | **4. Truy vấn** | `rules.pl` + Mock data | Prolog inference | 8 queries verified (100%) |
 
